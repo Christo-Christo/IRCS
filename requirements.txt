@@ -1,4 +1,6 @@
-pandas
-numpy
-python-dateutil
-pytz
+numpy @ file:///D:/test/IRCS/pandas%20%26%20dependencies/numpy-1.23.5-cp311-cp311-win_amd64.whl#sha256=0cbe9848fad08baf71de1a39e12d1b6310f1d5b2d0ea4de051058e6e1076852d
+pandas @ file:///D:/test/IRCS/pandas%20%26%20dependencies/pandas-2.3.0-cp311-cp311-win_amd64.whl#sha256=fa07e138b3f6c04addfeaf56cc7fdb96c3b68a3fe5e5401251f231fce40a0d7a
+python-dateutil @ file:///D:/test/IRCS/pandas%20%26%20dependencies/python_dateutil-2.8.2-py2.py3-none-any.whl#sha256=961d03dc3453ebbc59dbdea9e4e11c5651520a876d0f4db161e8674aae935da9
+pytz @ file:///D:/test/IRCS/pandas%20%26%20dependencies/pytz-2023.3-py2.py3-none-any.whl#sha256=a151b3abb88eda1d4e34a9814df37de2a80e301e68ba0fd856fb9b46bfbbbffb
+six @ file:///D:/test/IRCS/pandas%20%26%20dependencies/six-1.16.0-py2.py3-none-any.whl#sha256=8abb2f1d86890a2dfb989f9a77cfcfd3e47c2a354b01111771326f8aa26e0254
+tzdata @ file:///D:/test/IRCS/pandas%20%26%20dependencies/tzdata-2025.2-py2.py3-none-any.whl#sha256=1a403fada01ff9221ca8044d701868fa132215d84beb92242d9acd2147f667a8
