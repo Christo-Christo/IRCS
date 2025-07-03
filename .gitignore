@@ -1,8 +1,8 @@
 # Virtual envs & PyInstaller artifacts
-# .venv/
-# build/
+.venv/
+build/
 # dist/
-# bootstrap_env.spec
+bootstrap_env.spec
 # python_embedded/
 
 # Python cache
