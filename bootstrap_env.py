@@ -25,7 +25,6 @@ def extract_embedded_python(zip_path, target_dir):
     """
     with zipfile.ZipFile(zip_path, 'r') as zf:
         zf.extractall(target_dir)
-    # On Windows embed, python.exe is at top; on other OS, adjust accordingly
     if os.name == 'nt':
         return os.path.join(target_dir, 'python.exe')
     return shutil.which('python') or sys.executable
@@ -70,13 +69,38 @@ def main():
     pip_cmd = [venv_py, '-m', 'pip']
 
     # 5) Upgrade pip in the venv
-    run(pip_cmd + ['install', '--upgrade', 'pip'])
+    # run(pip_cmd + ['install', '--upgrade', 'pip'])
 
-    # 6) Install each wheel in the embedded modules directory
+    # 6) Install wheels in a safe dependency order, skipping build-only packages
+    skip_prefixes = [
+        'pyinstaller', 'altgraph', 'pefile', 'packaging',
+        'pyinstaller_hooks_contrib', 'pywin32_ctypes'
+    ]
+    ordered_prefixes = [
+        'wheel', 'pip', 'tzdata', 'six',
+        'python_dateutil', 'pytz', 'numpy', 'pandas'
+    ]
+
+    installed = set()
+    # Install in explicit order
+    for prefix in ordered_prefixes:
+        for fname in sorted(os.listdir(modules_dir)):
+            lower = fname.lower()
+            if not lower.endswith('.whl') or not lower.startswith(prefix):
+                continue
+            path = os.path.join(modules_dir, fname)
+            run(pip_cmd + ['install', '--no-index', path])
+            installed.add(fname)
+
+    # Then install any remaining runtime wheels
     for fname in sorted(os.listdir(modules_dir)):
-        if fname.lower().endswith('.whl'):
-            wheel_path = os.path.join(modules_dir, fname)
-            run(pip_cmd + ['install', '--no-index', wheel_path])
+        lower = fname.lower()
+        if fname in installed or not lower.endswith('.whl'):
+            continue
+        if any(lower.startswith(pref) for pref in skip_prefixes):
+            continue
+        path = os.path.join(modules_dir, fname)
+        run(pip_cmd + ['install', '--no-index', path])
 
     # 7) Success message
     print("\n✅ Environment ready! Activate with:")
