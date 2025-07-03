@@ -77,7 +77,7 @@ def main():
         'pyinstaller_hooks_contrib', 'pywin32_ctypes'
     ]
     ordered_prefixes = [
-        'wheel', 'pip', 'tzdata', 'six',
+        'wheel', 'pip', 'setuptools' 'tzdata', 'six',
         'python_dateutil', 'pytz', 'numpy', 'pandas'
     ]
 
