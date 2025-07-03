@@ -1,5 +1,5 @@
 # Virtual envs & PyInstaller artifacts
-.venv/
+# .venv/
 # build/
 # dist/
 # bootstrap_env.spec
