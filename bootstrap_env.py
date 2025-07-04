@@ -23,7 +23,7 @@ def main():
     start_time = time.time()
     root = os.getcwd()
     env_dir = os.path.join(root, '.venv')
-    modules_dir = resource_path('modules13')
+    modules_dir = resource_path('modules11')
 
     # 1) Locate host Python
     if os.name == 'nt':
@@ -70,7 +70,7 @@ def main():
     ]
     ordered_prefixes = [
         'wheel', 'setuptools', 'tzdata', 'six',
-        'python_dateutil', 'pytz', 'numpy', 'pandas'
+        'python_dateutil', 'pytz', 'et-xmlfile', 'openpyxl', 'numpy', 'pandas'
     ]
 
     installed = set()
@@ -113,7 +113,11 @@ def main():
 
     # 7) Success message
     end_time = time.time()
-    print(f"RUNTIME: {round((end_time - start_time),2)} s")
+    
+    if round((end_time - start_time),2) > 60:
+        print(f"RUNTIME: {round((end_time - start_time), 2) / 60} minutes")
+    else:
+        print(f"RUNTIME: {round((end_time - start_time), 2)} seconds")
     print("\n✅ Environment ready! Activate with:")
     if os.name == 'nt':
         print("   source .venv/Scripts/activate   (Git Bash)")
