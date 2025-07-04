@@ -3,6 +3,7 @@ import sys
 import os
 import subprocess
 import shutil
+import time
 
 
 def resource_path(relative_path):
@@ -19,9 +20,10 @@ def run(cmd):
 
 
 def main():
+    start_time = time.time()
     root = os.getcwd()
     env_dir = os.path.join(root, '.venv')
-    modules_dir = resource_path('modules')
+    modules_dir = resource_path('modules13')
 
     # 1) Locate host Python
     if os.name == 'nt':
@@ -110,6 +112,8 @@ def main():
         run(pip_cmd + ['install', '--no-index', path])
 
     # 7) Success message
+    end_time = time.time()
+    print(f"RUNTIME: {round((end_time - start_time),2)} s")
     print("\n✅ Environment ready! Activate with:")
     if os.name == 'nt':
         print("   source .venv/Scripts/activate   (Git Bash)")
