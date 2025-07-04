@@ -3,7 +3,6 @@ import sys
 import os
 import subprocess
 import shutil
-import zipfile
 
 
 def resource_path(relative_path):
@@ -19,71 +18,71 @@ def run(cmd):
     subprocess.check_call(cmd)
 
 
-def extract_embedded_python(zip_path, target_dir):
-    """
-    Extract an embeddable Python zip distribution to the target directory.
-    """
-    with zipfile.ZipFile(zip_path, 'r') as zf:
-        zf.extractall(target_dir)
-    if os.name == 'nt':
-        return os.path.join(target_dir, 'python.exe')
-    return shutil.which('python') or sys.executable
-
-
 def main():
     root = os.getcwd()
     env_dir = os.path.join(root, '.venv')
     modules_dir = resource_path('modules')
 
-    # 1) Determine host Python or fallback to embedded Python
+    # 1) Locate host Python
     if os.name == 'nt':
         host_py = shutil.which('py') or shutil.which('python')
     else:
         host_py = shutil.which('python')
 
     if not host_py:
-        embed_zip = os.path.join(modules_dir, 'python-embed.zip')
-        if os.path.isfile(embed_zip):
-            embed_dir = os.path.join(root, 'python_embedded')
-            os.makedirs(embed_dir, exist_ok=True)
-            print(f"Extracting embedded Python from {embed_zip} to {embed_dir}")
-            host_py = extract_embedded_python(embed_zip, embed_dir)
+        print("❌ No Python interpreter found. Please install Python and ensure it's on your PATH.")
+        sys.exit(1)
+
+    # 2) Check if pip is already available
+    try:
+        subprocess.check_call([host_py, '-m', 'pip', '--version'],
+                              stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        have_pip = True
+    except Exception:
+        have_pip = False
+
+    # 3) Bootstrap pip offline if missing
+    if not have_pip:
+        get_pip = os.path.join(modules_dir, 'get-pip.py')
+        if os.path.isfile(get_pip):
+            run([host_py, get_pip, '--no-index', '--find-links', modules_dir])
         else:
-            print("❌ No Python interpreter found and no embedded distribution. Please include python-embed.zip in modules.")
+            print("❌ get-pip.py not found; cannot bootstrap pip.")
             sys.exit(1)
 
-    # 2) Bootstrap pip into the host_python if provided
-    get_pip = os.path.join(modules_dir, 'get-pip.py')
-    if os.path.isfile(get_pip):
-        run([host_py, get_pip, '--no-index', '--find-links', modules_dir])
-
-    # 3) Create virtual environment if missing
+    # 4) Create virtual environment if missing
     if not os.path.isdir(env_dir):
         run([host_py, '-m', 'venv', env_dir])
 
-    # 4) Determine venv's python & pip
+    # 5) Determine venv's python & pip
     if os.name == 'nt':
         venv_py = os.path.join(env_dir, 'Scripts', 'python.exe')
     else:
         venv_py = os.path.join(env_dir, 'bin', 'python')
     pip_cmd = [venv_py, '-m', 'pip']
 
-    # 5) Upgrade pip in the venv
-    # run(pip_cmd + ['install', '--upgrade', 'pip'])
-
-    # 6) Install wheels in a safe dependency order, skipping build-only packages
+    # 6) Install wheels in safe order (skip already-installed)
     skip_prefixes = [
-        'pyinstaller', 'altgraph', 'pefile', 'packaging',
-        'pyinstaller_hooks_contrib', 'pywin32_ctypes'
+        'pyinstaller', 'altgraph', 'pefile',
+        'packaging', 'pyinstaller_hooks_contrib', 'pywin32_ctypes'
     ]
     ordered_prefixes = [
-        'wheel', 'pip', 'setuptools', 'tzdata', 'six',
+        'wheel', 'setuptools', 'tzdata', 'six',
         'python_dateutil', 'pytz', 'numpy', 'pandas'
     ]
 
     installed = set()
-    # Install in explicit order
+    # Pass 1: core and prerequisites
     for prefix in ordered_prefixes:
+        pkg_name = prefix.replace('_', '-')
+        try:
+            subprocess.check_call([venv_py, '-m', 'pip', 'show', pkg_name],
+                                  stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+            # already installed
+            continue
+        except Exception:
+            pass
+        # install matching wheel files
         for fname in sorted(os.listdir(modules_dir)):
             lower = fname.lower()
             if not lower.endswith('.whl') or not lower.startswith(prefix):
@@ -92,13 +91,21 @@ def main():
             run(pip_cmd + ['install', '--no-index', path])
             installed.add(fname)
 
-    # Then install any remaining runtime wheels
+    # Pass 2: remaining runtime wheels
     for fname in sorted(os.listdir(modules_dir)):
         lower = fname.lower()
         if fname in installed or not lower.endswith('.whl'):
             continue
         if any(lower.startswith(pref) for pref in skip_prefixes):
             continue
+        # derive package from wheel filename (before first dash)
+        pkg_name = lower.split('-')[0]
+        try:
+            subprocess.check_call([venv_py, '-m', 'pip', 'show', pkg_name],
+                                  stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+            continue
+        except Exception:
+            pass
         path = os.path.join(modules_dir, fname)
         run(pip_cmd + ['install', '--no-index', path])
 
@@ -108,6 +115,7 @@ def main():
         print("   source .venv/Scripts/activate   (Git Bash)")
     else:
         print("   source .venv/bin/activate      (Linux/Mac)")
+
 
 if __name__ == '__main__':
     main()
